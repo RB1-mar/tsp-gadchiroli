@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>शासकीय योजना डॅशबोर्ड - गडचिरोली</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+        th { 
+            background-color: #e0f2fe; color: #0c4a6e; font-weight: 700; position: sticky; 
+            top: 0; z-index: 20; cursor: pointer; user-select: none; border-bottom: 2px solid #bae6fd;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+        th:hover { background-color: #bae6fd; }
+        tr:hover td { background-color: #f0fdf4; transition: background-color 0.2s ease-in-out; }
+        .footer-row td { 
+            background-color: #dbeafe; font-weight: 800; position: sticky; bottom: 0; z-index: 20; 
+            font-size: 1.05rem; border-top: 2px solid #bfdbfe; box-shadow: 0 -2px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+        .sticky-col { position: sticky; right: 0; background-color: #ffffff; z-index: 15; box-shadow: -3px 0px 5px rgba(0,0,0,0.04); border-left: 2px solid #e2e8f0; }
+        tr:hover .sticky-col { background-color: #f0fdf4; }
+        th.sticky-col { background-color: #e0f2fe; z-index: 25; }
+        .footer-row .sticky-col { background-color: #dbeafe; z-index: 25; }
+        .table-container { height: 60vh; overflow-y: auto; overflow-x: auto; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans text-base">
+
+    <header class="bg-white shadow-md p-3 mb-5 sticky top-0 z-40 border-b border-slate-200">
+        <div class="max-w-screen-2xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-700 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-sm border-2 border-blue-200">ZPG</div>
+                <h1 class="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight">जिल्हा योजना व संनियंत्रण डॅशबोर्ड</h1>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <input type="file" id="file-upload" accept=".xlsx, .xls, .csv" class="text-sm text-slate-600 file:mr-2 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-blue-700 file:bg-blue-50 file:font-semibold hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-md shadow-sm" />
+                
+                <div class="relative w-full md:w-56 hidden" id="search-container">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                    <input type="text" id="global-search" placeholder="येथे शोधा..." class="border border-slate-300 rounded-md pl-9 pr-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-base">
+                </div>
+
+                <div class="relative hidden" id="col-selector-container">
+                    <button id="toggle-cols-btn" class="bg-slate-100 border border-slate-300 hover:bg-slate-200 px-4 py-2 rounded-md shadow-sm font-medium flex items-center gap-2 transition-colors">
+                        <span>⚙️</span> रकाने निवडा
+                    </button>
+                    <div id="column-list" class="absolute right-0 top-12 w-72 bg-white border border-slate-200 rounded-md shadow-2xl hidden z-50 max-h-80 overflow-y-auto p-2"></div>
+                </div>
+                
+                <button id="export-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md shadow-sm font-medium transition-colors hidden flex items-center gap-2">
+                    <span>📊</span> Excel Export
+                </button>
+            </div>
+        </div>
+        <div id="loading-indicator" class="hidden text-center text-orange-600 font-bold text-base mt-3 animate-pulse bg-orange-50 py-2 rounded-md border border-orange-200">
+            ⏳ कृपया प्रतीक्षा करा, डेटा लोड होत आहे...
+        </div>
+    </header>
+
+    <main class="max-w-screen-2xl mx-auto px-4">
+        <div id="filters-container" class="bg-white p-4 rounded-lg shadow-sm mb-5 hidden grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border border-slate-200">
+            <div><label class="block text-sm font-bold text-slate-600 mb-1">क्षेत्र</label><select id="filter-क्षेत्र" class="w-full border border-slate-300 rounded-md p-2 text-base data-filter"><option value="">सर्व</option></select></div>
+            <div><label class="block text-sm font-bold text-slate-600 mb-1">TSP/OTSP</label><select id="filter-TSP/OTSP" class="w-full border border-slate-300 rounded-md p-2 text-base data-filter"><option value="">सर्व</option></select></div>
+            <div><label class="block text-sm font-bold text-slate-600 mb-1">विकास क्षेत्र</label><select id="filter-विकास क्षेत्र" class="w-full border border-slate-300 rounded-md p-2 text-base data-filter"><option value="">सर्व</option></select></div>
+            <div><label class="block text-sm font-bold text-slate-600 mb-1">योजनेचे नाव</label><select id="filter-योजनेचे नाव" class="w-full border border-slate-300 rounded-md p-2 text-base data-filter"><option value="">सर्व</option></select></div>
+            <div><label class="block text-sm font-bold text-slate-600 mb-1">प्रशासकीय विभाग / एजन्सी</label><select id="filter-प्रशासकीय विभाग व अंमल बजावणी अधिकारी" class="w-full border border-slate-300 rounded-md p-2 text-base data-filter"><option value="">सर्व</option></select></div>
+            <div class="flex items-end"><button id="clear-filters" class="w-full bg-red-50 text-red-600 font-bold py-2 rounded-md border border-red-200 hover:bg-red-100 transition-colors">✖ फिल्टर काढा</button></div>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg mb-4 border border-slate-200 table-container">
+            <table class="min-w-full text-[15px]" id="main-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+                <tfoot id="table-foot"></tfoot>
+            </table>
+        </div>
+
+        <div id="pagination-controls" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-200 mb-8">
+            <button id="btn-prev" class="bg-blue-50 text-blue-700 border border-blue-200 px-5 py-2 rounded-md font-bold disabled:opacity-50 hover:bg-blue-100 transition-colors">⬅ मागे</button>
+            <span id="page-info" class="text-base font-bold text-slate-700 bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200">Page 1</span>
+            <button id="btn-next" class="bg-blue-50 text-blue-700 border border-blue-200 px-5 py-2 rounded-md font-bold disabled:opacity-50 hover:bg-blue-100 transition-colors">पुढे ➡</button>
+        </div>
+    </main>
+
+    <div id="data-modal" class="fixed inset-0 bg-slate-900 bg-opacity-70 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white w-full md:w-5/6 lg:w-3/4 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-gradient-to-r from-blue-700 to-blue-600 p-4 flex justify-between items-center text-white border-b border-blue-800">
+                <h2 id="modal-title" class="font-extrabold text-xl truncate pr-4">संपूर्ण माहिती</h2>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <button id="modal-toggle-cols-btn" class="bg-blue-800 hover:bg-blue-900 px-3 py-1.5 rounded shadow text-sm font-bold flex items-center gap-2 transition-colors border border-blue-500">
+                            ⚙️ तपशील रकाने
+                        </button>
+                        <div id="modal-column-list" class="absolute right-0 top-10 w-72 bg-white border border-slate-200 rounded-md shadow-2xl hidden z-50 max-h-60 overflow-y-auto p-2 text-slate-800"></div>
+                    </div>
+                    <button id="close-modal" class="text-blue-100 hover:text-white text-4xl font-bold leading-none transition-colors">&times;</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto bg-slate-50" id="modal-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+    <script>
+        let globalData = [];
+        let filteredData = []; 
+        let displayData = []; // 🌟 NEW: Contains Smart Grouped Data
+        let columnsList = []; 
+        
+        let visibleCols = ["अ.क्र.", "क्षेत्र", "विकास क्षेत्र", "योजनेचे नाव", "अर्थसंकल्पित तरतुद", "एकुण खर्च"];
+        let modalVisibleCols = [];
+        const sumCols = ["अर्थसंकल्पित तरतुद", "पुनर्विनियोजनानंतर सुधारीत अंतीम तरतुद", "बिडीएस वर प्राप्त तरतुद", "नविन कामावरील वितरित निधी", "एकुण खर्च"];
+        
+        let currentPage = 1;
+        const rowsPerPage = 50; 
+        let currentSort = { col: null, asc: true };
+        let currentRowIndex = null;
+
+        const tHead = document.getElementById('table-head');
+        const tBody = document.getElementById('table-body');
+        const tFoot = document.getElementById('table-foot');
+        const searchInput = document.getElementById('global-search');
+
+        // File Upload
+        document.getElementById('file-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('loading-indicator').classList.remove('hidden');
+            
+            setTimeout(() => {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const data = new Uint8Array(evt.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        
+                        const mainSheetName = workbook.SheetNames[0];
+                        globalData = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName], { defval: "" });
+                        filteredData = [...globalData];
+                        
+                        if(globalData.length > 0) {
+                            columnsList = Object.keys(globalData[0]);
+                            modalVisibleCols = [...columnsList];
+                        }
+
+                        document.getElementById('filters-container').classList.remove('hidden');
+                        document.getElementById('col-selector-container').classList.remove('hidden');
+                        document.getElementById('export-btn').classList.remove('hidden');
+                        document.getElementById('pagination-controls').classList.remove('hidden');
+                        document.getElementById('search-container').classList.remove('hidden');
+
+                        setupDropdowns();
+                        setupMainColumnSelector();
+                        setupModalColumnSelector();
+                        currentPage = 1;
+                        applyFiltersAndSearch(); // This will trigger grouping and rendering
+                    } catch (error) {
+                        alert("Error parsing file.");
+                    } finally {
+                        document.getElementById('loading-indicator').classList.add('hidden');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }, 50);
+        });
+
+        // Setup Filters
+        function setupDropdowns() {
+            const filterKeys = ["क्षेत्र", "TSP/OTSP", "विकास क्षेत्र", "योजनेचे नाव", "प्रशासकीय विभाग व अंमल बजावणी अधिकारी"];
+            filterKeys.forEach(key => {
+                const select = document.getElementById(`filter-${key}`);
+                const uniqueValues = [...new Set(globalData.map(item => item[key]))].filter(Boolean).sort();
+                let html = '<option value="">सर्व</option>';
+                uniqueValues.forEach(val => { html += `<option value="${val}">${val}</option>`; });
+                select.innerHTML = html;
+                select.addEventListener('change', applyFiltersAndSearch);
+            });
+        }
+
+        searchInput.addEventListener('input', applyFiltersAndSearch);
+
+        // 🌟 Apply Filters & Smart Grouping
+        function applyFiltersAndSearch() {
+            const filterKeys = ["क्षेत्र", "TSP/OTSP", "विकास क्षेत्र", "योजनेचे नाव", "प्रशासकीय विभाग व अंमल बजावणी अधिकारी"];
+            const activeFilters = [];
+            filterKeys.forEach(key => {
+                const val = document.getElementById(`filter-${key}`).value;
+                if(val) activeFilters.push({ key, val });
+            });
+            const query = searchInput.value.toLowerCase().trim();
+
+            // 1. Raw Filter
+            filteredData = globalData.filter(row => {
+                const matchesFilters = activeFilters.every(f => row[f.key] === f.val);
+                if(!matchesFilters) return false;
+                if(query) {
+                    const rowText = Object.values(row).join(" ").toLowerCase();
+                    if(!rowText.includes(query)) return false;
+                }
+                return true;
+            });
+
+            // 2. Smart Grouping Logic
+            const groupMap = new Map();
+            filteredData.forEach(row => {
+                const schemeName = row['योजनेचे नाव'] || "अज्ञात योजना";
+                
+                if (!groupMap.has(schemeName)) {
+                    // Deep copy to prevent modifying globalData
+                    const newRow = { ...row };
+                    newRow._originalRows = [row]; // Keep track of raw rows
+                    groupMap.set(schemeName, newRow);
+                } else {
+                    const existing = groupMap.get(schemeName);
+                    existing._originalRows.push(row);
+                    
+                    // Add sums
+                    sumCols.forEach(col => {
+                        existing[col] = (Number(existing[col]) || 0) + (Number(row[col]) || 0);
+                    });
+
+                    // Combine text for strings if they differ (e.g., Agency)
+                    Object.keys(row).forEach(key => {
+                        if (!sumCols.includes(key) && key !== 'योजनेचे नाव' && key !== 'अ.क्र.') {
+                            const existingVal = String(existing[key] || "").trim();
+                            const newVal = String(row[key] || "").trim();
+                            
+                            if (newVal && existingVal) {
+                                const existingParts = existingVal.split(", ");
+                                if (!existingParts.includes(newVal)) {
+                                    existing[key] = existingVal + ", " + newVal; // Join with comma
+                                }
+                            } else if (!existingVal && newVal) {
+                                existing[key] = newVal;
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Use Grouped data for display
+            displayData = Array.from(groupMap.values());
+
+            if(currentSort.col) sortDataArray();
+            currentPage = 1; 
+            renderTable();
+        }
+
+        document.getElementById('clear-filters').addEventListener('click', () => {
+            document.querySelectorAll('.data-filter').forEach(el => el.value = "");
+            searchInput.value = "";
+            currentSort = { col: null, asc: true }; 
+            applyFiltersAndSearch();
+        });
+
+        // Sorting (Now works on displayData)
+        window.handleSort = function(colName) {
+            if(currentSort.col === colName) currentSort.asc = !currentSort.asc;
+            else { currentSort.col = colName; currentSort.asc = true; }
+            sortDataArray();
+            renderTable();
+        };
+
+        function sortDataArray() {
+            if(!currentSort.col || currentSort.col === 'अ.क्र.') return; 
+            const col = currentSort.col;
+            const asc = currentSort.asc ? 1 : -1;
+            displayData.sort((a, b) => {
+                let valA = a[col]; let valB = b[col];
+                if(typeof valA === 'number' && typeof valB === 'number') return (valA - valB) * asc;
+                valA = valA ? valA.toString().toLowerCase() : "";
+                valB = valB ? valB.toString().toLowerCase() : "";
+                if(valA < valB) return -1 * asc;
+                if(valA > valB) return 1 * asc;
+                return 0;
+            });
+        }
+
+        // Render Main Table
+        function renderTable() {
+            let headHTML = "<tr>";
+            visibleCols.forEach(col => { 
+                let sortIcon = "";
+                if(currentSort.col === col) sortIcon = currentSort.asc ? " <span class='text-blue-700 font-black'>↑</span>" : " <span class='text-blue-700 font-black'>↓</span>";
+                headHTML += `<th onclick="handleSort('${col}')">${col}${sortIcon}</th>`; 
+            });
+            headHTML += `<th class="text-center sticky-col w-20">तपशील</th></tr>`;
+            tHead.innerHTML = headHTML;
+
+            const totalRows = displayData.length;
+            const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+            const pageData = displayData.slice(startIdx, endIdx);
+
+            let bodyHTML = "";
+            pageData.forEach((row, index) => {
+                // Pass index in displayData so modal knows which grouped row to open
+                const displayIndex = startIdx + index;
+                bodyHTML += `<tr class="cursor-pointer group" onclick="openDetails(${displayIndex})">`;
+                
+                visibleCols.forEach(col => {
+                    let val = row[col];
+                    if (col === "अ.क्र.") val = startIdx + index + 1; 
+                    else if(typeof val === 'number') val = val.toFixed(2);
+                    bodyHTML += `<td class="text-slate-700">${val !== undefined && val !== "" ? val : '-'}</td>`;
+                });
+                
+                bodyHTML += `<td class="text-center sticky-col"><button class="bg-blue-100 text-blue-800 font-extrabold px-4 py-2 rounded-md group-hover:bg-blue-600 group-hover:text-white transition-all duration-200">+</button></td></tr>`;
+            });
+            
+            if(totalRows === 0) bodyHTML = `<tr><td colspan="${visibleCols.length + 1}" class="text-center py-8 text-red-500 font-bold text-lg">कोणतीही माहिती आढळली नाही</td></tr>`;
+            tBody.innerHTML = bodyHTML;
+
+            let footHTML = "";
+            if (totalRows > 0) {
+                const sums = {};
+                displayData.forEach(row => {
+                    visibleCols.forEach(col => {
+                        if (sumCols.includes(col)) sums[col] = (sums[col] || 0) + (Number(row[col]) || 0);
+                    });
+                });
+                footHTML += "<tr class='footer-row'>";
+                visibleCols.forEach((col, idx) => {
+                    if (idx === 0) footHTML += `<td class="text-slate-800">एकूण (Total)</td>`;
+                    else if (sums[col] !== undefined) footHTML += `<td class="text-blue-800">₹ ${sums[col].toFixed(2)} <span class="text-xs text-slate-500 ml-1 font-normal">(लाखात)</span></td>`;
+                    else footHTML += `<td></td>`;
+                });
+                footHTML += `<td class="sticky-col"></td></tr>`;
+            }
+            tFoot.innerHTML = footHTML;
+
+            // Updated text to indicate "योजना" instead of generic records
+            document.getElementById('page-info').innerText = `Page ${currentPage} of ${totalPages} (Total Schemes: ${totalRows})`;
+            document.getElementById('btn-prev').disabled = currentPage === 1;
+            document.getElementById('btn-next').disabled = currentPage === totalPages;
+        }
+
+        document.getElementById('btn-prev').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
+        document.getElementById('btn-next').addEventListener('click', () => { if(currentPage < Math.ceil(displayData.length / rowsPerPage)) { currentPage++; renderTable(); }});
+
+        // Main Table Column Selector
+        function setupMainColumnSelector() {
+            const list = document.getElementById('column-list');
+            let html = "";
+            columnsList.forEach(col => {
+                const checked = visibleCols.includes(col) ? "checked" : "";
+                html += `<label class="flex items-center p-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100"><input type="checkbox" value="${col}" class="main-col-checkbox mr-3 h-4 w-4 text-blue-600 rounded" ${checked}><span class="truncate w-full font-medium text-slate-700 text-sm">${col}</span></label>`;
+            });
+            list.innerHTML = html;
+
+            document.querySelectorAll('.main-col-checkbox').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const col = e.target.value;
+                    if (e.target.checked && !visibleCols.includes(col)) visibleCols.push(col);
+                    else visibleCols = visibleCols.filter(c => c !== col);
+                    visibleCols.sort((a, b) => columnsList.indexOf(a) - columnsList.indexOf(b));
+                    renderTable();
+                });
+            });
+        }
+
+        document.getElementById('toggle-cols-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('column-list').classList.toggle('hidden'); });
+
+        // Modal Specific Column Selector
+        function setupModalColumnSelector() {
+            const list = document.getElementById('modal-column-list');
+            let html = "";
+            columnsList.forEach(col => {
+                const checked = modalVisibleCols.includes(col) ? "checked" : "";
+                html += `<label class="flex items-center p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100"><input type="checkbox" value="${col}" class="modal-col-checkbox mr-3 h-4 w-4 text-blue-600 rounded" ${checked}><span class="truncate w-full font-medium text-slate-700 text-sm">${col}</span></label>`;
+            });
+            list.innerHTML = html;
+
+            document.querySelectorAll('.modal-col-checkbox').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const col = e.target.value;
+                    if (e.target.checked && !modalVisibleCols.includes(col)) modalVisibleCols.push(col);
+                    else modalVisibleCols = modalVisibleCols.filter(c => c !== col);
+                    
+                    if(currentRowIndex !== null) renderModalContent(currentRowIndex);
+                });
+            });
+        }
+
+        document.getElementById('modal-toggle-cols-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('modal-column-list').classList.toggle('hidden'); });
+        
+        document.addEventListener('click', (e) => { 
+            const mainList = document.getElementById('column-list');
+            const modalList = document.getElementById('modal-column-list');
+            if(!mainList.contains(e.target)) mainList.classList.add('hidden'); 
+            if(!modalList.contains(e.target)) modalList.classList.add('hidden'); 
+        });
+
+        // Open Detail Modal Logic (Now accepts displayData index)
+        window.openDetails = function(index) {
+            currentRowIndex = index;
+            document.getElementById('data-modal').classList.remove('hidden');
+            renderModalContent(index);
+        };
+
+        // Render Content inside Modal
+        function renderModalContent(index) {
+            const row = displayData[index];
+            document.getElementById('modal-title').innerText = row['योजनेचे नाव'] || "संपूर्ण माहिती";
+            
+            // 1. Render Aggregated Info
+            let html = `<div class="mb-4"><h3 class="font-bold text-slate-700 pb-2 mb-3 text-lg border-b border-slate-200">एकत्रित माहिती (Summary)</h3>`;
+            html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+            
+            columnsList.forEach(col => {
+                if(!modalVisibleCols.includes(col)) return;
+
+                let val = row[col];
+                if (val === undefined || val === null || val === "" || val.toString().trim() === "") return; 
+                
+                if(typeof val === 'number') val = val.toFixed(2);
+
+                html += `
+                <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p class="text-xs text-slate-500 font-bold mb-1 uppercase tracking-wide break-words">${col}</p>
+                    <p class="text-[15px] font-bold text-slate-800 break-words">${val}</p>
+                </div>`;
+            });
+            html += `</div></div>`;
+
+            // 🌟 2. Render Breakdown Table IF Multiple Rows are grouped
+            if (row._originalRows && row._originalRows.length > 1) {
+                html += `<div class="mt-8 pt-4">
+                    <h3 class="font-bold text-blue-800 pb-2 mb-4 text-lg border-b border-blue-200 flex items-center gap-2">
+                        <span>📑</span> या योजनेतील मूळ नोंदी (${row._originalRows.length})
+                    </h3>`;
+                
+                html += `<div class="overflow-x-auto bg-white rounded-lg border border-slate-200 shadow-sm"><table class="min-w-full text-[14px] text-left"><thead class="bg-slate-100 text-slate-700 border-b border-slate-300"><tr>`;
+                
+                // Which columns to show in mini table? (Essential ones)
+                const subCols = ['सबस्किम कोड', 'प्रशासकीय विभाग व अंमल बजावणी अधिकारी', 'अर्थसंकल्पित तरतुद', 'एकुण खर्च'];
+                subCols.forEach(c => html += `<th class="px-4 py-3 border-r border-slate-200 font-bold">${c}</th>`);
+                html += `</tr></thead><tbody>`;
+                
+                row._originalRows.forEach(mRow => {
+                    html += `<tr class="border-b border-slate-100 hover:bg-blue-50 transition-colors">`;
+                    subCols.forEach(c => {
+                        let v = mRow[c];
+                        if(typeof v === 'number') v = v.toFixed(2);
+                        html += `<td class="px-4 py-3 border-r border-slate-100 text-slate-700">${v !== undefined && v !== "" ? v : '-'}</td>`;
+                    });
+                    html += `</tr>`;
+                });
+                html += `</tbody></table></div></div>`;
+            }
+
+            document.getElementById('modal-content').innerHTML = html;
+        }
+
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('data-modal').classList.add('hidden');
+            currentRowIndex = null;
+        });
+        
+        // Export Excel (Clean up _originalRows before export)
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const exportData = displayData.map(r => {
+                const clean = {...r};
+                delete clean._originalRows;
+                return clean;
+            });
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data");
+            XLSX.writeFile(wb, "ZPG_Dashboard_Export.xlsx");
+        });
+    </script>
+</body>
+</html>
