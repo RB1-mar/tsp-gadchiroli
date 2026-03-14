@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        /* 🌟 SAFETY NET: जर ब्राउझरने डिझाईन ब्लॉक केली, तरीही मेनू आणि पॉपअप लपलेले राहतील! */
+        /* 🌟 SAFETY NET: डिझाईन सुरक्षित ठेवण्यासाठी */
         .hidden { display: none !important; }
         
         th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
@@ -50,7 +50,7 @@
                 </span>
                 
                 <button id="refresh-btn" onclick="loadData()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-md shadow-sm text-sm font-bold flex items-center gap-2 transition-colors border border-blue-200">
-                    🔄 रिफ्रेश
+                    🔄 रिफ्रेश करा
                 </button>
                 
                 <div class="relative w-full md:w-56 hidden" id="search-container" style="display: none;">
@@ -121,7 +121,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <script>
-        const GOOGLE_SHEET_XLSX_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?output=xlsx";
+        // 🌟 CSV लिंक वापरली आहे जेणेकरून गुगल त्याला ब्लॉक करणार नाही!
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?gid=0&single=true&output=csv";
 
         let globalData = [];
         let filteredData = []; 
@@ -142,12 +143,12 @@
         const tFoot = document.getElementById('table-foot');
         const searchInput = document.getElementById('global-search');
 
-        // Safe Toggle Function (Ensures inline styles don't conflict)
+        // Safe Toggle Function (Ensures UI elements show/hide properly)
         function toggleVisibility(elementId, forceShow = false) {
             const el = document.getElementById(elementId);
             if(forceShow) {
                 el.classList.remove('hidden');
-                el.style.display = ''; // Clear inline block
+                el.style.display = ''; 
             } else {
                 el.classList.toggle('hidden');
                 if(el.classList.contains('hidden')) {
@@ -158,15 +159,24 @@
             }
         }
 
+        // Auto-Load Data Function (With Marathi UTF-8 Fix)
         async function loadData() {
             toggleVisibility('loading-indicator', true);
             
             try {
-                const response = await fetch(GOOGLE_SHEET_XLSX_URL);
-                if (!response.ok) throw new Error("Network response was not ok");
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                if (!response.ok) throw new Error("Network Error");
                 
-                const dataBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(dataBuffer, {type: 'array'});
+                const textData = await response.text();
+                
+                // 🌟 हा आहे 'UTF-8 BOM Encoder' जो तुमची मराठी अक्षरे खराब होऊ देणार नाही!
+                const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                const textBytes = new TextEncoder().encode(textData);
+                const combinedData = new Uint8Array(bom.length + textBytes.length);
+                combinedData.set(bom);
+                combinedData.set(textBytes, bom.length);
+
+                const workbook = XLSX.read(combinedData, {type: 'array'});
                 
                 const mainSheetName = workbook.SheetNames[0];
                 globalData = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName], { defval: "" });
@@ -176,7 +186,7 @@
                     modalVisibleCols = [...columnsList];
                 }
 
-                // Show all main UI elements
+                // Show all main UI elements safely
                 ['filters-container', 'col-selector-container', 'export-btn', 'pagination-controls', 'search-container'].forEach(id => toggleVisibility(id, true));
 
                 setupDropdowns();
@@ -193,8 +203,10 @@
             }
         }
 
+        // Call loadData immediately when the page loads
         window.onload = loadData;
 
+        // Setup Filters
         function setupDropdowns() {
             const filterKeys = ["क्षेत्र", "TSP/OTSP", "विकास क्षेत्र", "योजनेचे नाव", "प्रशासकीय विभाग व अंमल बजावणी अधिकारी"];
             filterKeys.forEach(key => {
@@ -218,6 +230,7 @@
 
         searchInput.addEventListener('input', applyFiltersAndSearch);
 
+        // Apply Filters & Smart Grouping
         function applyFiltersAndSearch() {
             const filterKeys = ["क्षेत्र", "TSP/OTSP", "विकास क्षेत्र", "योजनेचे नाव", "प्रशासकीय विभाग व अंमल बजावणी अधिकारी"];
             const activeFilters = [];
@@ -285,6 +298,7 @@
             applyFiltersAndSearch();
         });
 
+        // Sorting
         window.handleSort = function(colName) {
             if(currentSort.col === colName) currentSort.asc = !currentSort.asc;
             else { currentSort.col = colName; currentSort.asc = true; }
@@ -307,6 +321,7 @@
             });
         }
 
+        // Render Table
         function renderTable() {
             let headHTML = "<tr>";
             visibleCols.forEach(col => { 
@@ -367,6 +382,7 @@
         document.getElementById('btn-prev').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
         document.getElementById('btn-next').addEventListener('click', () => { if(currentPage < Math.ceil(displayData.length / rowsPerPage)) { currentPage++; renderTable(); }});
 
+        // Main Table Column Selector
         function setupMainColumnSelector() {
             const list = document.getElementById('column-list');
             let html = "";
@@ -389,6 +405,7 @@
 
         document.getElementById('toggle-cols-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleVisibility('column-list'); });
 
+        // Modal Specific Column Selector
         function setupModalColumnSelector() {
             const list = document.getElementById('modal-column-list');
             let html = "";
@@ -418,12 +435,14 @@
             if(!modalList.contains(e.target)) { modalList.classList.add('hidden'); modalList.style.display = 'none'; }
         });
 
+        // Open Detail Modal Logic
         window.openDetails = function(index) {
             currentRowIndex = index;
             toggleVisibility('data-modal', true);
             renderModalContent(index);
         };
 
+        // Render Content inside Modal
         function renderModalContent(index) {
             const row = displayData[index];
             document.getElementById('modal-title').innerText = row['योजनेचे नाव'] || "संपूर्ण माहिती";
