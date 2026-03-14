@@ -22,7 +22,7 @@
         tr:hover .sticky-col { background-color: #f0fdf4; }
         th.sticky-col { background-color: #e0f2fe; z-index: 25; }
         .footer-row .sticky-col { background-color: #dbeafe; z-index: 25; }
-        .table-container { height: 60vh; overflow-y: auto; overflow-x: auto; }
+        .table-container { height: 65vh; overflow-y: auto; overflow-x: auto; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -45,33 +45,33 @@
                 </span>
                 
                 <button id="refresh-btn" onclick="loadData()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-md shadow-sm text-sm font-bold flex items-center gap-2 transition-colors border border-blue-200">
-                    🔄 रिफ्रेश
+                    🔄 रिफ्रेश करा
                 </button>
                 
-                <div class="relative w-full md:w-56 hidden" id="search-container">
+                <div class="relative w-full md:w-56" id="search-container">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
                     <input type="text" id="global-search" placeholder="येथे शोधा..." class="border border-slate-300 rounded-md pl-9 pr-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-sm">
                 </div>
 
-                <div class="relative hidden" id="col-selector-container">
+                <div class="relative" id="col-selector-container">
                     <button id="toggle-cols-btn" class="bg-slate-100 border border-slate-300 hover:bg-slate-200 px-3 py-1.5 rounded-md shadow-sm text-sm font-bold flex items-center gap-2 transition-colors">
                         <span>⚙️</span> रकाने निवडा
                     </button>
                     <div id="column-list" class="absolute right-0 top-12 w-72 bg-white border border-slate-200 rounded-md shadow-2xl hidden z-50 max-h-80 overflow-y-auto p-2"></div>
                 </div>
                 
-                <button id="export-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md shadow-sm text-sm font-bold transition-colors hidden flex items-center gap-2">
-                    <span>📊</span> Excel
+                <button id="export-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md shadow-sm text-sm font-bold transition-colors flex items-center gap-2">
+                    <span>📊</span> Excel Export
                 </button>
             </div>
         </div>
-        <div id="loading-indicator" class="hidden text-center text-orange-600 font-bold text-base mt-3 animate-pulse bg-orange-50 py-2 rounded-md border border-orange-200">
-            ⏳ कृपया प्रतीक्षा करा, गुगल शीट वरून डेटा लोड होत आहे...
+        <div id="loading-indicator" class="hidden text-center text-orange-600 font-bold text-base mt-3 animate-pulse bg-orange-50 py-2 rounded-md border border-orange-200 max-w-screen-2xl mx-auto">
+            ⏳ कृपया प्रतीक्षा करा, गुगल शीट वरून सुरक्षित डेटा लोड होत आहे...
         </div>
     </header>
 
     <main class="max-w-screen-2xl mx-auto px-4">
-        <div id="filters-container" class="bg-white p-4 rounded-lg shadow-sm mb-5 hidden grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border border-slate-200">
+        <div id="filters-container" class="bg-white p-4 rounded-lg shadow-sm mb-5 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border border-slate-200">
             <div><label class="block text-sm font-bold text-slate-600 mb-1">क्षेत्र</label><select id="filter-क्षेत्र" class="w-full border border-slate-300 rounded-md p-2 text-sm font-medium data-filter"><option value="">सर्व</option></select></div>
             <div><label class="block text-sm font-bold text-slate-600 mb-1">TSP/OTSP</label><select id="filter-TSP/OTSP" class="w-full border border-slate-300 rounded-md p-2 text-sm font-medium data-filter"><option value="">सर्व</option></select></div>
             <div><label class="block text-sm font-bold text-slate-600 mb-1">विकास क्षेत्र</label><select id="filter-विकास क्षेत्र" class="w-full border border-slate-300 rounded-md p-2 text-sm font-medium data-filter"><option value="">सर्व</option></select></div>
@@ -88,7 +88,7 @@
             </table>
         </div>
 
-        <div id="pagination-controls" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-200 mb-8">
+        <div id="pagination-controls" class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-200 mb-8">
             <button id="btn-prev" class="bg-blue-50 text-blue-700 border border-blue-200 px-5 py-2 rounded-md font-bold disabled:opacity-50 hover:bg-blue-100 transition-colors">⬅ मागे</button>
             <span id="page-info" class="text-sm font-bold text-slate-700 bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200">Page 1</span>
             <button id="btn-next" class="bg-blue-50 text-blue-700 border border-blue-200 px-5 py-2 rounded-md font-bold disabled:opacity-50 hover:bg-blue-100 transition-colors">पुढे ➡</button>
@@ -116,8 +116,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <script>
-        // Google Sheet CSV Link
-        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?gid=0&single=true&output=csv";
+        // 🌟 सर्वात महत्वाचा बदल: येथे आपण CSV ऐवजी थेट XLSX फॉरमॅट लिंक वापरत आहोत!
+        const GOOGLE_SHEET_XLSX_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?output=xlsx";
 
         let globalData = [];
         let filteredData = []; 
@@ -140,13 +140,15 @@
 
         // Auto-Load Data Function
         async function loadData() {
-            document.getElementById('loading-indicator').classList.remove('hidden');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            loadingIndicator.classList.remove('hidden');
             
             try {
-                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                // Fetch the Excel (.xlsx) file directly
+                const response = await fetch(GOOGLE_SHEET_XLSX_URL);
                 if (!response.ok) throw new Error("Network response was not ok");
                 
-                // Using arrayBuffer to ensure perfect UTF-8 Marathi decoding
+                // Read as ArrayBuffer (Perfect for Excel, prevents any font corruption)
                 const dataBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(dataBuffer, {type: 'array'});
                 
@@ -158,12 +160,6 @@
                     modalVisibleCols = [...columnsList];
                 }
 
-                document.getElementById('filters-container').classList.remove('hidden');
-                document.getElementById('col-selector-container').classList.remove('hidden');
-                document.getElementById('export-btn').classList.remove('hidden');
-                document.getElementById('pagination-controls').classList.remove('hidden');
-                document.getElementById('search-container').classList.remove('hidden');
-
                 setupDropdowns();
                 setupMainColumnSelector();
                 setupModalColumnSelector();
@@ -173,11 +169,11 @@
                 alert("डेटा लोड करताना त्रुटी आली. कृपया तुमचे इंटरनेट कनेक्शन तपासा.");
                 console.error("Error fetching data:", error);
             } finally {
-                document.getElementById('loading-indicator').classList.add('hidden');
+                loadingIndicator.classList.add('hidden');
             }
         }
 
-        // Call loadData when the page opens
+        // Call loadData immediately when the page loads
         window.onload = loadData;
 
         // Setup Filters
