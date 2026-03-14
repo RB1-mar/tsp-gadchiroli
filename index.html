@@ -45,7 +45,7 @@
                 </span>
                 
                 <button id="refresh-btn" onclick="loadData()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-md shadow-sm text-sm font-bold flex items-center gap-2 transition-colors border border-blue-200">
-                    🔄 रिफ्रेश करा
+                    🔄 रिफ्रेश
                 </button>
                 
                 <div class="relative w-full md:w-56" id="search-container">
@@ -61,12 +61,12 @@
                 </div>
                 
                 <button id="export-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md shadow-sm text-sm font-bold transition-colors flex items-center gap-2">
-                    <span>📊</span> Excel Export
+                    <span>📊</span> Excel
                 </button>
             </div>
         </div>
         <div id="loading-indicator" class="hidden text-center text-orange-600 font-bold text-base mt-3 animate-pulse bg-orange-50 py-2 rounded-md border border-orange-200 max-w-screen-2xl mx-auto">
-            ⏳ कृपया प्रतीक्षा करा, गुगल शीट वरून सुरक्षित डेटा लोड होत आहे...
+            ⏳ कृपया प्रतीक्षा करा, गुगल शीट वरून डेटा लोड होत आहे...
         </div>
     </header>
 
@@ -116,8 +116,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <script>
-        // 🌟 सर्वात महत्वाचा बदल: येथे आपण CSV ऐवजी थेट XLSX फॉरमॅट लिंक वापरत आहोत!
-        const GOOGLE_SHEET_XLSX_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?output=xlsx";
+        // 🌟 CSV लिंक पुन्हा जोडली आहे (कारण Google CSV ला ब्लॉक करत नाही)
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?gid=0&single=true&output=csv";
 
         let globalData = [];
         let filteredData = []; 
@@ -138,19 +138,25 @@
         const tFoot = document.getElementById('table-foot');
         const searchInput = document.getElementById('global-search');
 
-        // Auto-Load Data Function
+        // Auto-Load Data Function (With Marathi UTF-8 Fix)
         async function loadData() {
             const loadingIndicator = document.getElementById('loading-indicator');
             loadingIndicator.classList.remove('hidden');
             
             try {
-                // Fetch the Excel (.xlsx) file directly
-                const response = await fetch(GOOGLE_SHEET_XLSX_URL);
-                if (!response.ok) throw new Error("Network response was not ok");
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                if (!response.ok) throw new Error("Network Error");
                 
-                // Read as ArrayBuffer (Perfect for Excel, prevents any font corruption)
-                const dataBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(dataBuffer, {type: 'array'});
+                const textData = await response.text();
+                
+                // 🌟 हा आहे 'UTF-8 BOM Encoder' जो तुमची मराठी अक्षरे खराब होऊ देणार नाही!
+                const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                const textBytes = new TextEncoder().encode(textData);
+                const combinedData = new Uint8Array(bom.length + textBytes.length);
+                combinedData.set(bom);
+                combinedData.set(textBytes, bom.length);
+
+                const workbook = XLSX.read(combinedData, {type: 'array'});
                 
                 const mainSheetName = workbook.SheetNames[0];
                 globalData = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName], { defval: "" });
