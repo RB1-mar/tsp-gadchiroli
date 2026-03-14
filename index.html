@@ -146,8 +146,9 @@
                 const response = await fetch(GOOGLE_SHEET_CSV_URL);
                 if (!response.ok) throw new Error("Network response was not ok");
                 
-                const dataBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(dataBuffer, {type: 'array'});
+                // 🌟 UTF-8 Marathi Font Fix
+                const textData = await response.text(); 
+                const workbook = XLSX.read(textData, {type: 'string'});
                 
                 const mainSheetName = workbook.SheetNames[0];
                 globalData = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName], { defval: "" });
