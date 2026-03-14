@@ -116,7 +116,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <script>
-        // 🌟 NEW: Google Sheet CSV Link
+        // Google Sheet CSV Link
         const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?gid=0&single=true&output=csv";
 
         let globalData = [];
@@ -138,7 +138,7 @@
         const tFoot = document.getElementById('table-foot');
         const searchInput = document.getElementById('global-search');
 
-        // 🌟 NEW: Auto-Load Data Function
+        // Auto-Load Data Function
         async function loadData() {
             document.getElementById('loading-indicator').classList.remove('hidden');
             
@@ -146,9 +146,9 @@
                 const response = await fetch(GOOGLE_SHEET_CSV_URL);
                 if (!response.ok) throw new Error("Network response was not ok");
                 
-                // 🌟 UTF-8 Marathi Font Fix
-                const textData = await response.text(); 
-                const workbook = XLSX.read(textData, {type: 'string'});
+                // Using arrayBuffer to ensure perfect UTF-8 Marathi decoding
+                const dataBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(dataBuffer, {type: 'array'});
                 
                 const mainSheetName = workbook.SheetNames[0];
                 globalData = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName], { defval: "" });
@@ -187,7 +187,6 @@
                 const select = document.getElementById(`filter-${key}`);
                 const uniqueValues = [...new Set(globalData.map(item => item[key]))].filter(Boolean).sort();
                 
-                // Keep the current selected value if any
                 const currentVal = select.value;
                 let html = '<option value="">सर्व</option>';
                 uniqueValues.forEach(val => { 
@@ -196,7 +195,6 @@
                 });
                 select.innerHTML = html;
                 
-                // Only attach listener once to avoid multiple triggers
                 if(!select.hasAttribute('data-listener')) {
                     select.addEventListener('change', applyFiltersAndSearch);
                     select.setAttribute('data-listener', 'true');
