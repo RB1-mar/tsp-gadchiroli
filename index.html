@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>शासकीय योजना डॅशबोर्ड - गडचिरोली</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
         th { 
@@ -116,7 +118,6 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <script>
-        // 🌟 CSV लिंक पुन्हा जोडली आहे (कारण Google CSV ला ब्लॉक करत नाही)
         const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCpbcB3JlZMIyX_2-idiMoe5G7_8Pl3EbEp02PkXhZFGyZzcK8cPwoBw6_IdvC5d5Mcsg86jGCTOJJ/pub?gid=0&single=true&output=csv";
 
         let globalData = [];
@@ -138,7 +139,7 @@
         const tFoot = document.getElementById('table-foot');
         const searchInput = document.getElementById('global-search');
 
-        // Auto-Load Data Function (With Marathi UTF-8 Fix)
+        // Auto-Load Data Function (With UTF-8 Fix)
         async function loadData() {
             const loadingIndicator = document.getElementById('loading-indicator');
             loadingIndicator.classList.remove('hidden');
@@ -149,7 +150,6 @@
                 
                 const textData = await response.text();
                 
-                // 🌟 हा आहे 'UTF-8 BOM Encoder' जो तुमची मराठी अक्षरे खराब होऊ देणार नाही!
                 const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
                 const textBytes = new TextEncoder().encode(textData);
                 const combinedData = new Uint8Array(bom.length + textBytes.length);
@@ -179,7 +179,6 @@
             }
         }
 
-        // Call loadData immediately when the page loads
         window.onload = loadData;
 
         // Setup Filters
